@@ -14,7 +14,8 @@ features_list = ['poi',
                  'bonus',
                  'exercised_stock_options',
                  'salary',
-                 'total_stock_value'] 
+                 'total_stock_value',
+                 'long_term_incentive'] 
                  # bouns_prct will be added when the feature is created
 
 ### Load the dictionary containing the dataset

@@ -9,4 +9,6 @@ aS'salary'
 p4
 aS'total_stock_value'
 p5
+aS'long_term_incentive'
+p6
 a.
