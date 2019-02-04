@@ -13146,6 +13146,9 @@ div#notebook {
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">precision_score</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">recall_score</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">precision_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">recall_score</span>
 </pre></div>
 
     </div>
@@ -13890,7 +13893,7 @@ Number of POIs in the dataset: 18
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Now it's time to select the best features from our feature list. For this we will use SelectKBest. I didn't want to include too many features, but ceratinly enough to get acceptable results. Let's take a look at the K scores for all our features.</p>
+<p>Now it's time to select the best features from our feature list. For this we will loop through all possible number of features and reveiw the resutls to find the best number of features to use.</p>
 
 </div>
 </div>
@@ -13898,6 +13901,151 @@ Number of POIs in the dataset: 18
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">get_Kbest</span> <span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">,</span> <span class="n">sort_keys</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="n">labels</span><span class="p">,</span> <span class="n">features</span> <span class="o">=</span> <span class="n">targetFeatureSplit</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    
+    <span class="n">features_train</span><span class="p">,</span><span class="n">features_test</span><span class="p">,</span><span class="n">labels_train</span><span class="p">,</span><span class="n">labels_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">features</span><span class="p">,</span><span class="n">labels</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+                                                                                              <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">features_list</span><span class="p">):</span>
+        <span class="n">k_best</span> <span class="o">=</span> <span class="n">SelectKBest</span><span class="p">(</span><span class="n">k</span> <span class="o">=</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">k_best</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">k_best</span><span class="o">.</span><span class="n">scores_</span>
+        <span class="n">unsorted_pairs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">features_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">scores</span><span class="p">)</span>
+        <span class="n">sorted_pairs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unsorted_pairs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="n">k_best_features</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">sorted_pairs</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">features_list_test</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;poi&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">k_best_features</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+        <span class="n">clf</span> <span class="o">=</span> <span class="n">GaussianNB</span><span class="p">()</span>
+            
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Results with {} features&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+        <span class="n">test_classifier</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list_test</span><span class="p">,</span> <span class="n">folds</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span>
+    
+    
+<span class="n">review_all_features</span> <span class="o">=</span> <span class="n">get_Kbest</span><span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Results with 2 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.90409	Precision: 0.46055	Recall: 0.32100	F1: 0.37831	F2: 0.34171
+	Total predictions: 11000	True positives:  321	False positives:  376	False negatives:  679	True negatives: 9624
+
+Results with 3 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84069	Precision: 0.46889	Recall: 0.26750	F1: 0.34066	F2: 0.29264
+	Total predictions: 13000	True positives:  535	False positives:  606	False negatives: 1465	True negatives: 10394
+
+Results with 4 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84300	Precision: 0.48581	Recall: 0.35100	F1: 0.40755	F2: 0.37163
+	Total predictions: 13000	True positives:  702	False positives:  743	False negatives: 1298	True negatives: 10257
+
+Results with 5 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84677	Precision: 0.50312	Recall: 0.32300	F1: 0.39342	F2: 0.34791
+	Total predictions: 13000	True positives:  646	False positives:  638	False negatives: 1354	True negatives: 10362
+
+Results with 6 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84669	Precision: 0.50272	Recall: 0.32300	F1: 0.39330	F2: 0.34787
+	Total predictions: 13000	True positives:  646	False positives:  639	False negatives: 1354	True negatives: 10361
+
+Results with 7 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83723	Precision: 0.45748	Recall: 0.31200	F1: 0.37099	F2: 0.33319
+	Total predictions: 13000	True positives:  624	False positives:  740	False negatives: 1376	True negatives: 10260
+
+Results with 8 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84564	Precision: 0.44414	Recall: 0.32000	F1: 0.37198	F2: 0.33895
+	Total predictions: 14000	True positives:  640	False positives:  801	False negatives: 1360	True negatives: 11199
+
+Results with 9 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84160	Precision: 0.36136	Recall: 0.24500	F1: 0.29201	F2: 0.26186
+	Total predictions: 15000	True positives:  490	False positives:  866	False negatives: 1510	True negatives: 12134
+
+Results with 10 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.84047	Precision: 0.35147	Recall: 0.23250	F1: 0.27987	F2: 0.24938
+	Total predictions: 15000	True positives:  465	False positives:  858	False negatives: 1535	True negatives: 12142
+
+Results with 11 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83860	Precision: 0.34373	Recall: 0.23150	F1: 0.27667	F2: 0.24767
+	Total predictions: 15000	True positives:  463	False positives:  884	False negatives: 1537	True negatives: 12116
+
+Results with 12 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83867	Precision: 0.34421	Recall: 0.23200	F1: 0.27718	F2: 0.24818
+	Total predictions: 15000	True positives:  464	False positives:  884	False negatives: 1536	True negatives: 12116
+
+Results with 13 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83873	Precision: 0.33227	Recall: 0.20750	F1: 0.25546	F2: 0.22435
+	Total predictions: 15000	True positives:  415	False positives:  834	False negatives: 1585	True negatives: 12166
+
+Results with 14 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83867	Precision: 0.33119	Recall: 0.20600	F1: 0.25401	F2: 0.22285
+	Total predictions: 15000	True positives:  412	False positives:  832	False negatives: 1588	True negatives: 12168
+
+Results with 15 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83367	Precision: 0.30888	Recall: 0.20000	F1: 0.24279	F2: 0.21517
+	Total predictions: 15000	True positives:  400	False positives:  895	False negatives: 1600	True negatives: 12105
+
+Results with 16 features
+GaussianNB(priors=None, var_smoothing=1e-09)
+	Accuracy: 0.83473	Precision: 0.31157	Recall: 0.19800	F1: 0.24213	F2: 0.21357
+	Total predictions: 15000	True positives:  396	False positives:  875	False negatives: 1604	True negatives: 12125
+
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>After reviwing the results we can see that 5 features give us the best precision and acceptable recall. 6 features could also be acceptable with the same recall score and only slightly lower precision. We will use 5 features for the this project.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now we run SelecKBest to determine those features and update our features list.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="k">def</span> <span class="nf">get_Kbest</span> <span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
@@ -13947,21 +14095,12 @@ Number of POIs in the dataset: 18
 </div>
 
 </div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>As we can see the K scores vary quite a bit. Our range is between 0.16416449823428736 and 25.09754152873549. After review of all the scores let's go ahead and set the minimum threshold at ten. We can see that there are 6 features in our list that meet that minimum threchhold.</p>
-<p>Let's run our function again, this time with the K parameter as 6 to get the features that meet our minimum threshold and set update our features list.</p>
-
-</div>
-</div>
-</div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span></span><span class="n">best_features</span> <span class="o">=</span> <span class="n">get_Kbest</span><span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span></span><span class="n">best_features</span> <span class="o">=</span> <span class="n">get_Kbest</span><span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
 
 <span class="k">print</span> <span class="n">best_features</span>
 
@@ -13982,7 +14121,7 @@ Number of POIs in the dataset: 18
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>{&#39;salary&#39;: 18.575703268041785, &#39;bonus&#39;: 21.06000170753657, &#39;total_stock_value&#39;: 24.4676540475264, &#39;exercised_stock_options&#39;: 25.09754152873549, &#39;bonus_prct&#39;: 10.95562707448108, &#39;long_term_incentive&#39;: 10.072454529369441}
+<pre>{&#39;bonus&#39;: 21.06000170753657, &#39;exercised_stock_options&#39;: 25.09754152873549, &#39;salary&#39;: 18.575703268041785, &#39;total_stock_value&#39;: 24.4676540475264, &#39;bonus_prct&#39;: 10.95562707448108}
 </pre>
 </div>
 </div>
@@ -13994,16 +14133,17 @@ Number of POIs in the dataset: 18
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>As we can see above, SelectKBest as determined that bonus, exercised stock options, salary, total stock value, bonus percent, and long term incentive are the 6 best features from dataset. This was based on reveiwing K scores for all features and determing to focus on a minimum threshold of 10.</p>
+<p>As we can see above, SelectKBest as determined that bonus, exercised stock options, salary, total stock value, bonus percent, and long term incentive are the 5 best features from dataset. This was based on reveiwing K scores for all features and determing to focus on a minimum threshold of 10.</p>
 <p>Our final features list contains:</p>
 <ul>
 <li>poi</li>
-<li>bonus</li>
-<li>exercised stock options</li>
+<li><p>bonus</p>
+</li>
+<li><p>exercised stock options</p>
+</li>
 <li>salary</li>
 <li>total stock value</li>
 <li>bonus percent</li>
-<li>long term incentive</li>
 </ul>
 <p>Looks like our new feature we created made it into the final features list.</p>
 
@@ -14052,7 +14192,7 @@ Number of POIs in the dataset: 18
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">featureFormat</span><span class="p">(</span><span class="n">my_dataset</span><span class="p">,</span> <span class="n">features_list</span><span class="p">,</span> <span class="n">sort_keys</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
@@ -14070,7 +14210,7 @@ Number of POIs in the dataset: 18
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="prompt input_prompt">In&nbsp;[20]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">clf_nb</span> <span class="o">=</span> <span class="n">GaussianNB</span><span class="p">()</span>
@@ -14100,8 +14240,8 @@ Number of POIs in the dataset: 18
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>GaussianNB(priors=None, var_smoothing=1e-09)
-	Accuracy: 0.83723	Precision: 0.45748	Recall: 0.31200	F1: 0.37099	F2: 0.33319
-	Total predictions: 13000	True positives:  624	False positives:  740	False negatives: 1376	True negatives: 10260
+	Accuracy: 0.84669	Precision: 0.50272	Recall: 0.32300	F1: 0.39330	F2: 0.34787
+	Total predictions: 13000	True positives:  646	False positives:  639	False negatives: 1354	True negatives: 10361
 
 DecisionTreeClassifier(class_weight=None, criterion=&#39;gini&#39;, max_depth=None,
             max_features=None, max_leaf_nodes=None,
@@ -14109,13 +14249,13 @@ DecisionTreeClassifier(class_weight=None, criterion=&#39;gini&#39;, max_depth=No
             min_samples_leaf=1, min_samples_split=2,
             min_weight_fraction_leaf=0.0, presort=False, random_state=None,
             splitter=&#39;best&#39;)
-	Accuracy: 0.77408	Precision: 0.28077	Recall: 0.30000	F1: 0.29007	F2: 0.29595
-	Total predictions: 13000	True positives:  600	False positives: 1537	False negatives: 1400	True negatives: 9463
+	Accuracy: 0.78754	Precision: 0.30931	Recall: 0.30900	F1: 0.30915	F2: 0.30906
+	Total predictions: 13000	True positives:  618	False positives: 1380	False negatives: 1382	True negatives: 9620
 
 AdaBoostClassifier(algorithm=&#39;SAMME.R&#39;, base_estimator=None,
           learning_rate=1.0, n_estimators=50, random_state=None)
-	Accuracy: 0.79908	Precision: 0.28112	Recall: 0.19650	F1: 0.23131	F2: 0.20909
-	Total predictions: 13000	True positives:  393	False positives: 1005	False negatives: 1607	True negatives: 9995
+	Accuracy: 0.79938	Precision: 0.29894	Recall: 0.22600	F1: 0.25740	F2: 0.23759
+	Total predictions: 13000	True positives:  452	False positives: 1060	False negatives: 1548	True negatives: 9940
 
 </pre>
 </div>
@@ -14146,14 +14286,14 @@ AdaBoostClassifier(algorithm=&#39;SAMME.R&#39;, base_estimator=None,
             min_weight_fraction_leaf=0.0, n_estimators=10, n_jobs=None,
             oob_score=False, random_state=None, verbose=0,
             warm_start=False)
-	Accuracy: 0.83800	Precision: 0.43690	Recall: 0.18350	F1: 0.25845	F2: 0.20758
-	Total predictions: 13000	True positives:  367	False positives:  473	False negatives: 1633	True negatives: 10527
+	Accuracy: 0.84115	Precision: 0.46409	Recall: 0.21000	F1: 0.28916	F2: 0.23582
+	Total predictions: 13000	True positives:  420	False positives:  485	False negatives: 1580	True negatives: 10515
 
 KNeighborsClassifier(algorithm=&#39;auto&#39;, leaf_size=30, metric=&#39;minkowski&#39;,
            metric_params=None, n_jobs=None, n_neighbors=5, p=2,
            weights=&#39;uniform&#39;)
-	Accuracy: 0.85931	Precision: 0.60240	Recall: 0.25150	F1: 0.35485	F2: 0.28466
-	Total predictions: 13000	True positives:  503	False positives:  332	False negatives: 1497	True negatives: 10668
+	Accuracy: 0.86615	Precision: 0.65971	Recall: 0.26850	F1: 0.38166	F2: 0.30463
+	Total predictions: 13000	True positives:  537	False positives:  277	False negatives: 1463	True negatives: 10723
 
 </pre>
 </div>
@@ -14193,7 +14333,7 @@ KNeighborsClassifier(algorithm=&#39;auto&#39;, leaf_size=30, metric=&#39;minkows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="n">clf_dt</span> <span class="o">=</span> <span class="n">DecisionTreeClassifier</span><span class="p">()</span>
@@ -14225,8 +14365,8 @@ KNeighborsClassifier(algorithm=&#39;auto&#39;, leaf_size=30, metric=&#39;minkows
             min_samples_leaf=1, min_samples_split=2,
             min_weight_fraction_leaf=0.0, presort=False, random_state=None,
             splitter=&#39;best&#39;)
-	Accuracy: 0.77938	Precision: 0.29757	Recall: 0.31900	F1: 0.30792	F2: 0.31447
-	Total predictions: 13000	True positives:  638	False positives: 1506	False negatives: 1362	True negatives: 9494
+	Accuracy: 0.78631	Precision: 0.30723	Recall: 0.31000	F1: 0.30861	F2: 0.30944
+	Total predictions: 13000	True positives:  620	False positives: 1398	False negatives: 1380	True negatives: 9602
 
 DecisionTreeClassifier(class_weight=None, criterion=&#39;gini&#39;, max_depth=2,
             max_features=None, max_leaf_nodes=None,
@@ -14234,8 +14374,8 @@ DecisionTreeClassifier(class_weight=None, criterion=&#39;gini&#39;, max_depth=2,
             min_samples_leaf=4, min_samples_split=4,
             min_weight_fraction_leaf=0.0, presort=False, random_state=None,
             splitter=&#39;best&#39;)
-	Accuracy: 0.83031	Precision: 0.30639	Recall: 0.08150	F1: 0.12875	F2: 0.09552
-	Total predictions: 13000	True positives:  163	False positives:  369	False negatives: 1837	True negatives: 10631
+	Accuracy: 0.83223	Precision: 0.31864	Recall: 0.07950	F1: 0.12725	F2: 0.09354
+	Total predictions: 13000	True positives:  159	False positives:  340	False negatives: 1841	True negatives: 10660
 
 </pre>
 </div>
@@ -14278,7 +14418,7 @@ DecisionTreeClassifier(class_weight=None, criterion=&#39;gini&#39;, max_depth=2,
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="prompt input_prompt">In&nbsp;[22]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># GlaussianNB Validation 1 (StratifiedShuffleSplit, folds = 1000)</span>
@@ -14303,10 +14443,10 @@ DecisionTreeClassifier(class_weight=None, criterion=&#39;gini&#39;, max_depth=2,
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>GaussianNB(priors=None, var_smoothing=1e-09)
-	Accuracy: 0.83723	Precision: 0.45748	Recall: 0.31200	F1: 0.37099	F2: 0.33319
-	Total predictions: 13000	True positives:  624	False positives:  740	False negatives: 1376	True negatives: 10260
+	Accuracy: 0.84669	Precision: 0.50272	Recall: 0.32300	F1: 0.39330	F2: 0.34787
+	Total predictions: 13000	True positives:  646	False positives:  639	False negatives: 1354	True negatives: 10361
 
-Processing time: 2.019 s
+Processing time: 0.965 s
 </pre>
 </div>
 </div>
@@ -14317,7 +14457,7 @@ Processing time: 2.019 s
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="prompt input_prompt">In&nbsp;[23]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span></span><span class="c1"># GlaussianNB Validation 2  (Cross validation)</span>
@@ -14344,11 +14484,11 @@ Processing time: 2.019 s
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Accuracy and Deviation: (0.8625641025641025, 0.09696970493893538)
-Processing time: 0.027 s
+<pre>Accuracy and Deviation: (0.8548717948717949, 0.1065820396268209)
+Processing time: 0.015 s
 GaussianNB(priors=None, var_smoothing=1e-09)
-	Accuracy: 0.83723	Precision: 0.45748	Recall: 0.31200	F1: 0.37099	F2: 0.33319
-	Total predictions: 13000	True positives:  624	False positives:  740	False negatives: 1376	True negatives: 10260
+	Accuracy: 0.84669	Precision: 0.50272	Recall: 0.32300	F1: 0.39330	F2: 0.34787
+	Total predictions: 13000	True positives:  646	False positives:  639	False negatives: 1354	True negatives: 10361
 
 </pre>
 </div>
